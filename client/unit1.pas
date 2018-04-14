@@ -1,0 +1,122 @@
+unit Unit1;
+
+{$mode objfpc}{$H+}
+
+interface
+
+uses
+  Classes, SysUtils, FileUtil, IdTCPClient, Forms, Controls, Graphics, Dialogs,
+  StdCtrls;
+
+type
+
+  { TForm1 }
+
+  TForm1 = class(TForm)
+    Button1: TButton;
+    Button2: TButton;
+    CheckBox1: TCheckBox;
+    Edit1: TEdit;
+    IdTCPClient1: TIdTCPClient;
+    Memo1: TMemo;
+    OpenDialog1: TOpenDialog;
+    procedure Button1Click(Sender: TObject);
+    procedure Button2Click(Sender: TObject);
+    procedure CheckBox1Change(Sender: TObject);
+    procedure IdTCPClient1Connected(Sender: TObject);
+    procedure IdTCPClient1Disconnected(Sender: TObject);
+  private
+    procedure SetClientState(aState: Boolean);
+    { private declarations }
+  public
+    { public declarations }
+  end;
+
+var
+  Form1: TForm1;
+
+implementation
+
+{$R *.lfm}
+
+{ TForm1 }
+
+function ClientSendFile(AClient: TIdTCPClient; Filename: String): Boolean;
+begin
+  AClient.IOHandler.LargeStream := True; // fully support large streams
+  Result := True;
+  try
+    AClient.IOHandler.WriteFile(Filename); // send file stream data
+  except
+    Result := False;
+  end;
+
+end;
+
+procedure TForm1.SetClientState(aState : Boolean);
+begin
+  if (aState = True) then
+     begin
+     IdTCPClient1.Connect;
+     CheckBox1.Checked := true;
+     end
+     else
+     begin
+     IdTCPClient1.Disconnect;
+     CheckBox1.Checked := false;
+     end;
+end;
+
+procedure TForm1.Button2Click(Sender: TObject);
+begin
+    if OpenDialog1.Execute then
+  begin
+      Edit1.Text := OpenDialog1.FileName;
+  end;
+end;
+
+procedure TForm1.Button1Click(Sender: TObject);
+var
+  LSize: LongInt;
+begin
+  LSize := 0;
+  Memo1.Lines.Add('Try send stream to server.....');
+  if (ClientSendFile(IdTCPClient1, Edit1.Text) = False) then
+  begin
+    Memo1.Lines.Add('Cannot send record/buffer to server->' +
+       Edit1.Text);
+    Exit;
+  end
+  else
+  begin
+    Memo1.Lines.Add('send record/buffer to server->' +  Edit1.Text);
+  end;
+
+  SetClientState(false);
+end;
+
+procedure TForm1.CheckBox1Change(Sender: TObject);
+begin
+    if (CheckBox1.Checked = True) then
+  begin
+    IdTCPClient1.Host := '127.0.0.1';
+    IdTCPClient1.Port := 6000;
+    IdTCPClient1.Connect;
+  end
+  else
+    IdTCPClient1.Disconnect;
+
+end;
+
+procedure TForm1.IdTCPClient1Connected(Sender: TObject);
+begin
+    Memo1.Lines.Add('Client has connected to server');
+end;
+
+procedure TForm1.IdTCPClient1Disconnected(Sender: TObject);
+begin
+  Memo1.Lines.Add('Client has disconnected from server');
+end;
+
+end.
+
